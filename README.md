@@ -126,7 +126,79 @@ Managing Kubernetes infrastructure across **multiple cloud providers** is painfu
 | **Kubernetes** | `kubernetes-client/python`, OpenShift OAuth, AWS STS |
 | **AWS** | `boto3`, `botocore` (EKS describe-cluster, list-clusters, STS) |
 | **Deployment** | Docker multi-stage build, OpenShift Route, systemd (bare metal) |
+| **CI/CD** | Jenkins Pipelines (CI + CD), Helm 3 charts, Makefile |
 | **Caching** | In-memory with configurable TTL, SQLite for history (optional) |
+
+---
+
+## CI/CD Pipeline
+
+Fully automated build, test, and deployment pipeline using Jenkins with Kubernetes pod agents.
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                          CI Pipeline (Jenkinsfile)                        │
+│                                                                          │
+│   ┌─────────┐    ┌─────────┐    ┌─────────────┐    ┌──────────────┐     │
+│   │  Lint    │───▶│  Test   │───▶│ Build Image │───▶│ Push to Nexus│     │
+│   │ flake8  │    │  smoke  │    │  multi-stage│    │  Docker Reg  │     │
+│   │ pylint  │    │  pytest │    │  + labels   │    │  :tag + :latest    │
+│   └─────────┘    └─────────┘    └─────────────┘    └──────┬───────┘     │
+│                                                           │              │
+└───────────────────────────────────────────────────────────┼──────────────┘
+                                                            │ trigger
+┌───────────────────────────────────────────────────────────▼──────────────┐
+│                          CD Pipeline (Jenkinsfile.cd)                     │
+│                                                                          │
+│   ┌───────────┐    ┌──────────────┐    ┌──────────┐    ┌──────────┐     │
+│   │ Pre-flight│───▶│ Deploy to    │───▶│ Rollout  │───▶│  Verify  │     │
+│   │ validate  │    │ OCP cluster  │    │  wait    │    │ healthz  │     │
+│   │ dry-run   │    │ (oc apply)   │    │ status   │    │ HTTP 200 │     │
+│   └───────────┘    └──────────────┘    └──────────┘    └──────────┘     │
+│                                                                          │
+│   Supports: single cluster │ multi-cluster │ dry-run │ staging/prod      │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### CI Pipeline (`Jenkinsfile`)
+
+| Stage | What it does |
+|-------|-------------|
+| **Lint** | `flake8` + `pylint` static analysis |
+| **Test** | Smoke test (mock mode health check + API validation) + `pytest` if tests exist |
+| **Build** | Multi-stage Docker build with git commit/branch/build labels baked in |
+| **Push** | Tags and pushes to Nexus Docker registry (`:build-sha` + `:latest`) |
+| **Trigger CD** | Auto-triggers CD pipeline on `main` branch merges |
+
+### CD Pipeline (`Jenkinsfile.cd`)
+
+| Stage | What it does |
+|-------|-------------|
+| **Pre-flight** | Validates image tag, target cluster, environment |
+| **Deploy** | `oc login` → `oc apply` ConfigMap + Deployment → `oc set image` |
+| **Rollout** | Waits for `oc rollout status` with 120s timeout |
+| **Verify** | Hits `/healthz` on the Route and verifies HTTP 200 |
+
+Supports **multi-cluster deployment** (deploy to one cluster or all), **dry-run** mode, and **staging/production** environment selection.
+
+### Helm Chart
+
+Templated Kubernetes manifests for consistent multi-environment deployments:
+
+```bash
+# Preview rendered manifests
+make helm-template
+
+# Deploy to a specific cluster
+helm upgrade --install rogers-dashboard helm/rogers-dashboard \
+    --namespace rogers-dashboard --create-namespace \
+    --set image.tag=42-abc1234
+
+# Deploy with persistent history DB
+helm upgrade --install rogers-dashboard helm/rogers-dashboard \
+    --set persistence.enabled=true \
+    --set persistence.size=2Gi
+```
 
 ---
 
@@ -137,6 +209,7 @@ Managing Kubernetes infrastructure across **multiple cloud providers** is painfu
 - **Dual authentication** — OCP OAuth (user/password → token) and AWS STS (access key → presigned token) handled transparently
 - **Version intelligence** — Parses product version ConfigMaps per namespace, detects RT/AU/BS mismatches, tracks HF (hotfix) numbers
 - **Zero-framework frontend** — No React/Vue build step; single `dashboard.js` file (~3K lines) with localStorage state persistence, column resizing, density toggle, and CSV export
+- **CI/CD automation** — Jenkins pipelines with Kubernetes pod agents, Nexus registry integration, Helm charts for templated deploys, multi-cluster rollout with health verification
 - **Mock mode** — Full demo with realistic data for development without cluster access
 - **Proxy-aware** — Configurable HTTP/HTTPS/NO_PROXY for corporate network environments
 
@@ -176,6 +249,27 @@ oc apply -f k8s/dashboard-config.yaml
 oc apply -f k8s/deployment.yaml
 ```
 
+### Deploy via Helm
+
+```bash
+helm upgrade --install rogers-dashboard helm/rogers-dashboard \
+    --namespace rogers-dashboard --create-namespace \
+    --set image.repository=<your-registry>/rogers-dashboard \
+    --set image.tag=latest
+```
+
+### Makefile Shortcuts
+
+```bash
+make mock          # Run locally in demo mode
+make build         # Build Docker image
+make push          # Push to Nexus registry
+make deploy        # Deploy to OpenShift (oc apply)
+make helm-install  # Deploy via Helm
+make test          # Run smoke tests
+make lint          # Run linters
+```
+
 See [DEPLOY.md](DEPLOY.md) for bare-metal RHEL deployment with systemd.
 
 ---
@@ -188,17 +282,24 @@ See [DEPLOY.md](DEPLOY.md) for bare-metal RHEL deployment with systemd.
 ├── aws_client.py          # AWS STS token generation
 ├── config.py              # Environment configuration
 ├── mock_data.py           # Realistic mock data for demo mode
-├── Dockerfile             # Multi-stage build
+├── Dockerfile             # Multi-stage Docker build
+├── Jenkinsfile            # CI pipeline (lint → test → build → push)
+├── Jenkinsfile.cd         # CD pipeline (deploy → verify)
+├── Makefile               # Dev workflow commands
 ├── static/
 │   ├── js/dashboard.js    # Frontend SPA
 │   └── css/dashboard.css  # Dark theme
 ├── templates/
 │   └── dashboard.html     # Jinja2 template
+├── helm/rogers-dashboard/ # Helm chart
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   └── templates/         # Deployment, Service, Route, PVC
 ├── k8s/
-│   ├── deployment.yaml    # K8s manifests
+│   ├── deployment.yaml    # Raw K8s manifests
 │   └── dashboard-config.yaml
 └── deploy/
-    └── rogers-dashboard.service  # systemd unit
+    └── rogers-dashboard.service  # systemd unit (bare metal)
 ```
 
 ---
