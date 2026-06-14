@@ -1,0 +1,174 @@
+# =============================================================================
+# Multi-Cloud Dashboard (OCP + AWS EKS)
+#
+# This pod connects OUT to other OCP clusters (OAuth via OCP user/pass) and to
+# AWS EKS clusters (STS via access/secret key). It needs NO in-cluster RBAC on
+# the cluster it runs on — only network egress to each cluster API:
+#   - OCP cluster API servers on :6443
+#   - AWS EKS API endpoints (and sts.<region>.amazonaws.com) on :443
+#
+# Deploy:
+#   oc new-project rogers-dashboard      # or use an existing namespace
+#   oc apply -f dashboard-config.yaml # ConfigMap: clusters + quick links
+#   # Create the credentials Secret imperatively (keeps secrets out of git):
+#   oc create secret generic rogers-dashboard-cred -n rogers-dashboard \
+#       --from-literal=OCP_USERNAME='...'  --from-literal=OCP_PASSWORD='...' \
+#       --from-literal=AWS_ACCESS_KEY_ID='...' --from-literal=AWS_SECRET_ACCESS_KEY='...'
+#   # (AWS_REGION + proxy now live in the AWS section of dashboard-config.yaml)
+#   oc apply -f deployment.yaml        # Deployment + Service + Route
+#
+# (If you prefer, uncomment the Secret block below and fill it in instead of
+#  creating the Secret imperatively — but then don't commit this file.)
+# =============================================================================
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: rogers-dashboard-cred
+#   namespace: rogers-dashboard
+#   labels:
+#     app: rogers-dashboard
+# type: Opaque
+# stringData:
+#   OCP_USERNAME: "<OCP_USER>"
+#   OCP_PASSWORD: "<OCP_PASS>"
+#   AWS_ACCESS_KEY_ID: "<AWS_ACCESS_KEY>"
+#   AWS_SECRET_ACCESS_KEY: "<AWS_SECRET_KEY>"
+# ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rogers-dashboard
+  namespace: rogers-dashboard
+  labels:
+    app: rogers-dashboard
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: rogers-dashboard
+  template:
+    metadata:
+      labels:
+        app: rogers-dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: registry.internal.example.com:5001/rogers-dashboard:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: MOCK_MODE
+              value: "false"
+            - name: FLASK_DEBUG
+              value: "false"
+            - name: SANITY_PASS_THRESHOLD
+              value: "95.0"
+            - name: HISTORY_DB_PATH
+              value: "/data/history.db"
+            # OCP + AWS credentials (keys in the Secret match these env names)
+            - name: OCP_USERNAME
+              valueFrom: { secretKeyRef: { name: rogers-dashboard-cred, key: OCP_USERNAME } }
+            - name: OCP_PASSWORD
+              valueFrom: { secretKeyRef: { name: rogers-dashboard-cred, key: OCP_PASSWORD } }
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom: { secretKeyRef: { name: rogers-dashboard-cred, key: AWS_ACCESS_KEY_ID } }
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom: { secretKeyRef: { name: rogers-dashboard-cred, key: AWS_SECRET_ACCESS_KEY } }
+            # AWS region + outbound proxy come from the AWS section of the
+            # ConfigMap so they can be changed without rebuilding or touching
+            # the Secret. The AWS_* proxy keys are mapped onto the standard
+            # HTTP_PROXY / HTTPS_PROXY / NO_PROXY env vars that boto3, requests
+            # and the kubernetes client honour automatically. OCP hosts are in
+            # AWS_NO_PROXY so OCP traffic bypasses the proxy.
+            - name: AWS_REGION
+              valueFrom: { configMapKeyRef: { name: rogers-dashboard-config, key: AWS_REGION, optional: true } }
+            - name: HTTP_PROXY
+              valueFrom: { configMapKeyRef: { name: rogers-dashboard-config, key: AWS_HTTP_PROXY, optional: true } }
+            - name: HTTPS_PROXY
+              valueFrom: { configMapKeyRef: { name: rogers-dashboard-config, key: AWS_HTTPS_PROXY, optional: true } }
+            - name: NO_PROXY
+              valueFrom: { configMapKeyRef: { name: rogers-dashboard-config, key: AWS_NO_PROXY, optional: true } }
+            - name: http_proxy
+              valueFrom: { configMapKeyRef: { name: rogers-dashboard-config, key: AWS_HTTP_PROXY, optional: true } }
+            - name: https_proxy
+              valueFrom: { configMapKeyRef: { name: rogers-dashboard-config, key: AWS_HTTPS_PROXY, optional: true } }
+            - name: no_proxy
+              valueFrom: { configMapKeyRef: { name: rogers-dashboard-config, key: AWS_NO_PROXY, optional: true } }
+            # Cluster list + quick links from the ConfigMap
+            - name: CLUSTERS_CONFIG
+              valueFrom:
+                configMapKeyRef:
+                  name: rogers-dashboard-config
+                  key: clusters.json
+            - name: QUICK_LINKS
+              valueFrom:
+                configMapKeyRef:
+                  name: rogers-dashboard-config
+                  key: quick-links.json
+                  optional: true
+          volumeMounts:
+            - name: history-db
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+      volumes:
+        # Ephemeral store for the SQLite history DB. Swap for a PVC if you want
+        # trend history to survive pod restarts.
+        - name: history-db
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rogers-dashboard
+  namespace: rogers-dashboard
+  labels:
+    app: rogers-dashboard
+spec:
+  selector:
+    app: rogers-dashboard
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: rogers-dashboard
+  namespace: rogers-dashboard
+  labels:
+    app: rogers-dashboard
+spec:
+  host: rogers-dashboard.apps.prodocpcluster403.example.com
+  to:
+    kind: Service
+    name: rogers-dashboard
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

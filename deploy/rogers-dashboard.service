@@ -1,0 +1,27 @@
+[Unit]
+Description=Multi-Cloud Dashboard (OCP + AWS EKS)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=rogers-dashboard
+Group=rogers-dashboard
+WorkingDirectory=/opt/rogers-dashboard/app
+# Keep the SQLite history DB in the writable data dir (see ReadWritePaths below).
+Environment=HISTORY_DB_PATH=/opt/rogers-dashboard/data/history.db
+ExecStart=/bin/bash /opt/rogers-dashboard/app/start.sh
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rogers-dashboard
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/rogers-dashboard/data
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

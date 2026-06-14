@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RGS OCP Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ ASSETS_VERSION }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☸</text></svg>">
+    <!-- SheetJS with styling support for Excel export (primary: styled, fallback: community) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"
+            onerror="(function(){var s=document.createElement('script');s.src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';document.head.appendChild(s);})()"></script>
+</head>
+<body>
+    <header class="header" data-provider="ocp">
+        <div class="header-left header-home" onclick="navigate('env-table')" title="Go to home">
+            <div class="brand-logo" id="brand-logo" aria-hidden="true">
+                <!-- OCP (Red Hat OpenShift) atom -->
+                <svg id="logo-ocp" class="brand-logo-svg active" width="34" height="34" viewBox="0 0 64 64" fill="none">
+                    <circle cx="32" cy="32" r="28" fill="#EE0000"/>
+                    <ellipse cx="32" cy="32" rx="22" ry="8" stroke="white" stroke-width="3" fill="none"/>
+                    <ellipse cx="32" cy="32" rx="22" ry="8" stroke="white" stroke-width="3" fill="none" transform="rotate(60 32 32)"/>
+                    <ellipse cx="32" cy="32" rx="22" ry="8" stroke="white" stroke-width="3" fill="none" transform="rotate(-60 32 32)"/>
+                    <circle cx="32" cy="32" r="4" fill="white"/>
+                </svg>
+                <!-- AWS smile -->
+                <svg id="logo-aws" class="brand-logo-svg" width="34" height="34" viewBox="0 0 64 64" fill="none">
+                    <rect width="64" height="64" rx="10" fill="#232F3E"/>
+                    <path d="M16 36 Q32 50 48 36" stroke="#FF9900" stroke-width="5" stroke-linecap="round" fill="none"/>
+                    <path d="M44 36 L50 36 L48 30 Z" fill="#FF9900"/>
+                    <text x="32" y="26" text-anchor="middle" fill="white" font-family="Inter,sans-serif" font-size="13" font-weight="700" letter-spacing="1">aws</text>
+                </svg>
+            </div>
+            <div class="brand-text">
+                <h1 id="header-title">Rogers Multi-Cloud Dashboard</h1>
+                <span class="brand-subtitle" id="header-subtitle">OCP + AWS Clusters</span>
+            </div>
+        </div>
+        <div class="header-center">
+            <div class="provider-switch" id="provider-switch" role="tablist" aria-label="Cloud provider">
+                <button class="provider-btn active" data-provider="all" onclick="setProvider('all')" role="tab" aria-selected="true" title="Show all clusters (OCP + AWS EKS)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    <span>All</span>
+                </button>
+                <button class="provider-btn" data-provider="ocp" onclick="setProvider('ocp')" role="tab" aria-selected="false" title="Show OpenShift clusters only">
+                    <svg width="14" height="14" viewBox="0 0 64 64" aria-hidden="true">
+                        <circle cx="32" cy="32" r="28" fill="#EE0000"/>
+                        <ellipse cx="32" cy="32" rx="22" ry="8" stroke="white" stroke-width="4" fill="none"/>
+                        <ellipse cx="32" cy="32" rx="22" ry="8" stroke="white" stroke-width="4" fill="none" transform="rotate(60 32 32)"/>
+                        <ellipse cx="32" cy="32" rx="22" ry="8" stroke="white" stroke-width="4" fill="none" transform="rotate(-60 32 32)"/>
+                    </svg>
+                    <span>OpenShift</span>
+                </button>
+                <button class="provider-btn" data-provider="aws" onclick="setProvider('aws')" role="tab" aria-selected="false" title="Show AWS EKS clusters only">
+                    <svg width="14" height="14" viewBox="0 0 64 64" aria-hidden="true">
+                        <rect width="64" height="64" rx="10" fill="#232F3E"/>
+                        <path d="M16 38 Q32 52 48 38" stroke="#FF9900" stroke-width="6" stroke-linecap="round" fill="none"/>
+                    </svg>
+                    <span>AWS EKS</span>
+                </button>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="cluster-badge" id="cluster-badge"><span class="dot"></span> <span id="cluster-badge-label">Connected</span></div>
+            <button class="density-btn" id="density-btn" onclick="toggleDensity()" title="Toggle table density (compact / comfortable)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                <span id="density-label">Comfortable</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="quick-links-bar" id="quick-links-bar"></div>
+
+    <nav class="view-tabs" id="view-tabs">
+        <div class="view-tabs-group">
+            <button class="view-tab" data-view="env-table" onclick="navigate('env-table')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                Environments
+            </button>
+            <button class="view-tab" data-view="clusters" onclick="navigate('clusters')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                Clusters
+            </button>
+            <button class="view-tab" data-view="urls" onclick="navigate('urls')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                URLs
+            </button>
+            <button class="view-tab" data-view="crds" onclick="navigate('crds')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                CRDs
+            </button>
+        </div>
+        <div class="view-tabs-crumb" id="view-tabs-crumb"></div>
+    </nav>
+
+    <main class="main-content" id="main-content">
+        <div class="loading-screen">
+            <div class="spinner"></div>
+            <p>Loading dashboard...</p>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}?v={{ ASSETS_VERSION }}"></script>
+</body>
+</html>

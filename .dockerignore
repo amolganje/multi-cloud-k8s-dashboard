@@ -1,0 +1,30 @@
+# Secrets — must never be baked into the image (injected via Secret at runtime)
+credentials.env
+credentials.env.example
+
+# Virtualenvs
+venv/
+.venv/
+
+# Deploy/manifests + bare-metal launcher not needed inside the image
+k8s/
+deploy/
+design-mockups/
+start.sh
+
+# Runtime artifacts
+*.db
+*.db-shm
+*.db-wal
+
+# Local / VCS / docs junk
+.DS_Store
+__pycache__/
+*.pyc
+.git/
+.gitignore
+README.md
+DEPLOY.md
+*.zip
+# …but the AWS CLI bundle must reach the build context (used by the awscli stage)
+!vendor/awscliv2.zip

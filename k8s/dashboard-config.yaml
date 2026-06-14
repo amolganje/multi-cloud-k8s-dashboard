@@ -1,0 +1,95 @@
+# =============================================================================
+# Dashboard Configuration — Multi-Cloud (OCP + AWS)
+# Deploy in the dashboard namespace on any cluster:
+#   oc apply -f dashboard-config.yaml -n rogers-dashboard
+#
+# Clusters are accessed using the OCP user/pass + AWS keys held in the
+# 'rogers-dashboard-cred' Secret (see deployment.yaml).
+#
+# This ConfigMap is organised into two clouds:
+#   • OCP  — the OpenShift cluster inventory (listed explicitly below).
+#   • AWS  — AWS-wide settings (region + outbound proxy). EKS clusters are
+#            auto-discovered from the AWS account, so they are NOT listed here.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rogers-dashboard-config
+  namespace: rogers-dashboard
+  labels:
+    app: rogers-dashboard
+data:
+
+  # ===========================================================================
+  # OCP
+  # ---------------------------------------------------------------------------
+  # OpenShift cluster inventory. Accessed via OAuth using the OCP_USERNAME /
+  # OCP_PASSWORD from the Secret. `short_name` is the friendly label shown in
+  # the UI (the real full_name / api_url are kept for identity + connectivity).
+  # ===========================================================================
+  clusters.json: |
+    {
+      "dc01": {
+        "short_name": "ocp-401",
+        "full_name": "prodocpcluster401",
+        "console_url": "https://console-openshift-console.apps.prodocpcluster401.example.com/",
+        "api_url": "https://api.prodocpcluster401.example.com:6443",
+        "region": "US - East",
+        "provider": "VMware vSphere"
+      },
+      "dc02": {
+        "short_name": "ocp-402",
+        "full_name": "prodocpcluster402",
+        "console_url": "https://console-openshift-console.apps.prodocpcluster402.example.com/",
+        "api_url": "https://api.prodocpcluster402.example.com:6443",
+        "region": "US - East",
+        "provider": "VMware vSphere"
+      },
+      "dc03": {
+        "short_name": "ocp-403",
+        "full_name": "prodocpcluster403",
+        "console_url": "https://console-openshift-console.apps.prodocpcluster403.example.com/",
+        "api_url": "https://api.prodocpcluster403.example.com:6443",
+        "region": "US - West",
+        "provider": "VMware vSphere"
+      }
+    }
+
+  # ===========================================================================
+  # AWS
+  # ---------------------------------------------------------------------------
+  # AWS-wide settings. EKS clusters are auto-discovered using the AWS keys in
+  # the Secret, so they don't need to be listed. The deployment maps these keys
+  # onto the standard HTTP_PROXY / HTTPS_PROXY / NO_PROXY env vars that boto3,
+  # requests and the kubernetes client honour. OCP hosts (.internal.example.com) are
+  # in AWS_NO_PROXY so OCP traffic bypasses the proxy.
+  # ===========================================================================
+  AWS_REGION: "us-east-1"
+  AWS_HTTP_PROXY: "http://proxy.internal.example.com:8080"
+  AWS_HTTPS_PROXY: "http://proxy.internal.example.com:8080"
+  AWS_NO_PROXY: ".internal.example.com,127.0.0.1,localhost,169.254.169.254"
+
+  # ===========================================================================
+  # Top-bar quick links (shown for both clouds)
+  # ===========================================================================
+  quick-links.json: |
+    {
+      "dvc": {
+        "label": "DevOps Tools",
+        "icon": "wrench",
+        "links": [
+          {"label": "Jenkins", "url": "https://jenkins.example.com", "icon": "jenkins"},
+          {"label": "Git Repository", "url": "https://git.example.com", "icon": "git"},
+          {"label": "Artifact Repository", "url": "https://nexus.example.com", "icon": "package"}
+        ]
+      },
+      "aws": {
+        "label": "AWS Tools",
+        "icon": "aws",
+        "links": [
+          {"label": "AWS Jenkins", "url": "https://jenkins.aws.example.com", "icon": "jenkins"},
+          {"label": "AWS Nexus", "url": "https://nexus.aws.example.com", "icon": "package"},
+          {"label": "AWS Console", "url": "https://console.aws.example.com", "icon": "aws"}
+        ]
+      }
+    }

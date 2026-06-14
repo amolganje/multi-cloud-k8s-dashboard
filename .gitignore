@@ -1,0 +1,35 @@
+# Credentials (NEVER commit)
+credentials.env
+*.pem
+*.key
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Runtime artifacts
+history.db
+history.db-shm
+history.db-wal
+*.db
+
+# Offline dependency bundles (too large for git)
+packages/
+vendor/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
