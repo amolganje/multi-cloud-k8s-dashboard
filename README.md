@@ -1,92 +1,92 @@
 # Multi-Cloud Kubernetes Dashboard
 
-A production-grade, real-time operations dashboard for managing **OpenShift (OCP)** and **AWS EKS** Kubernetes clusters from a single pane of glass. Built with Python/Flask backend and a modern dark-themed JavaScript frontend.
+> A unified operations dashboard that brings **OpenShift** and **AWS EKS** clusters into a single pane of glass — built to manage 11+ production clusters and 50+ environments at an enterprise telecom.
 
-![Clusters Overview](docs/screenshots/01-clusters-overview.png)
+<p align="center">
+  <img src="docs/screenshots/01-clusters-overview.png" alt="Clusters Overview" width="100%">
+</p>
 
-## Features
+## The Problem
 
-### Multi-Cloud Cluster Management
-- **Unified view** of OpenShift 4.x and AWS EKS clusters with health status, node counts, and version info
-- **Auto-discovery** of EKS clusters via AWS API — no manual registration needed
-- **Node role classification** — Masters, Workers, Application, Infra, Couchbase, Elasticsearch nodes with smart abbreviations and aggregated counts
+Managing Kubernetes infrastructure across **multiple cloud providers** is painful:
+- OCP and EKS have different consoles, APIs, and authentication mechanisms
+- Teams waste time switching between consoles to check cluster health, environment status, and product versions
+- No single view exists to compare CRD versions, Helm releases, or product deployments across clusters
 
-### Environment Lifecycle Tracking
-- Track **environments across clusters** with drop versions, branches, owners, and deployment status
-- **Product version matrix** per namespace (Runtime / Authoring / Backing Services) with mismatch detection
-- **Sanity test results** with pass rates, triggered-by info, and Jenkins build links
-- **Master vs Regular** environment badges
+**This dashboard solves that** by aggregating real-time data from all clusters into one searchable, sortable, exportable interface.
 
-### Service Catalog & Quick Links
-- **Service URL directory** organized by cluster and grouped by Runtime, Authoring, and Backing Services
-- **Platform tools** quick-link panel (Jenkins, Nexus, BitBucket, ArgoCD, etc.)
-- Exportable tables (CSV)
+---
 
-### CRD / Prerequisites Comparison
-- **Cross-cluster Helm release comparison** matrix for platform CRDs and prerequisites
-- Version drift detection with visual indicators
+## What It Does
 
-### UI / UX
-- Dark theme with modern, responsive design
-- Provider switcher (All / OpenShift / AWS EKS) with persistent state
-- Searchable, sortable, column-resizable tables
-- Comfortable / Compact density toggle
-- Expandable cluster detail cards with environment + node drill-down
-- Export to CSV on every table
+| Capability | Details |
+|-----------|---------|
+| **Multi-Cloud Fleet View** | Unified cluster list with health, version, node breakdown (M/W/A/I/C/E roles), and environment count |
+| **Environment Tracking** | Drop versions, branches, owners, sanity test pass rates, and product version matrix across RT/AU/BS namespaces |
+| **EKS Auto-Discovery** | No manual cluster registration — discovers EKS clusters via AWS API and classifies node groups automatically |
+| **Product Version Matrix** | Per-namespace version comparison with HF (hotfix) badge tracking and cross-namespace mismatch detection |
+| **Service URL Catalog** | Organized by cluster and namespace role (Runtime, Authoring, Backing Services) with quick-link panels |
+| **CRD Comparison Matrix** | Cross-cluster Helm release version comparison with drift detection |
+| **Export Everything** | CSV export on every table |
 
 ---
 
 ## Screenshots
 
-### Clusters Overview
-All clusters at a glance — status, version, node breakdown, environment count, and drop versions.
+### Cluster Fleet Overview
+<p align="center">
+  <img src="docs/screenshots/01-clusters-overview.png" alt="Clusters" width="100%">
+</p>
 
-![Clusters Overview](docs/screenshots/01-clusters-overview.png)
+### Environment Detail — Product Versions, Sanity Tests, Jenkins Deployments
+<p align="center">
+  <img src="docs/screenshots/07-env-detail.png" alt="Environment Detail" width="100%">
+</p>
 
-### Environments Table
-Cross-cluster environment listing with drop versions, owners, sanity pass rates, and inline product versions.
+### Cluster Deep-Dive — OCP (Nodes, CPU/Memory, Environments)
+<p align="center">
+  <img src="docs/screenshots/03-cluster-detail-ocp.png" alt="OCP Cluster Detail" width="100%">
+</p>
 
-![Environments](docs/screenshots/02-environments-table.png)
+### Cluster Deep-Dive — AWS EKS (Application, Infra, Couchbase, Elasticsearch nodes)
+<p align="center">
+  <img src="docs/screenshots/04-cluster-detail-eks.png" alt="EKS Cluster Detail" width="100%">
+</p>
 
-### Cluster Detail — OpenShift
-Deep-dive into an OCP cluster: environments, node list with CPU/memory metrics and role badges.
+<details>
+<summary><b>More Screenshots</b> (click to expand)</summary>
 
-![OCP Detail](docs/screenshots/03-cluster-detail-ocp.png)
+### Environments Table with Inline Product Versions
+<p align="center">
+  <img src="docs/screenshots/02-environments-table.png" alt="Environments" width="100%">
+</p>
 
-### Cluster Detail — AWS EKS
-EKS cluster with application, infra, couchbase, and elasticsearch node groups.
+### Product Versions — Expanded View
+<p align="center">
+  <img src="docs/screenshots/08-env-versions-expanded.png" alt="Versions Expanded" width="100%">
+</p>
 
-![EKS Detail](docs/screenshots/04-cluster-detail-eks.png)
+### Product Versions — Scrolled (OC, OH, Care, MASS, CSR, Catalog, Backoffice)
+<p align="center">
+  <img src="docs/screenshots/09-env-versions-scrolled.png" alt="Versions Scrolled" width="100%">
+</p>
 
-### Service URLs — EKS
-Per-cluster service catalog grouped by namespace role (Runtime, Authoring, Backing Services).
+### Service URL Catalog — EKS
+<p align="center">
+  <img src="docs/screenshots/05-urls-eks-services.png" alt="URLs EKS" width="100%">
+</p>
 
-![URLs EKS](docs/screenshots/05-urls-eks-services.png)
+### Platform Tools Quick Links
+<p align="center">
+  <img src="docs/screenshots/06-urls-platform-tools.png" alt="Platform Tools" width="100%">
+</p>
 
-### Platform Tools
-Quick-access panel for CI/CD pipelines, registries, and cluster management tools.
+### CRD / Prerequisites Comparison Matrix
+<p align="center">
+  <img src="docs/screenshots/10-crds-comparison.png" alt="CRDs" width="100%">
+</p>
 
-![Platform Tools](docs/screenshots/06-urls-platform-tools.png)
-
-### Environment Detail
-Full environment drill-down: drop version, branch, owner, sanity results, product versions per namespace, catalog data, Jenkins deployments, ingress routes, and pod health.
-
-![Env Detail](docs/screenshots/07-env-detail.png)
-
-### Product Versions — Expanded
-Inline version columns for every product across RT/AU/BS namespaces with HF (hotfix) badges.
-
-![Versions Expanded](docs/screenshots/08-env-versions-expanded.png)
-
-### Product Versions — Scrolled
-Additional product columns (OC, OH, Care, MASS, CSR, Catalog, Backoffice) visible on scroll.
-
-![Versions Scrolled](docs/screenshots/09-env-versions-scrolled.png)
-
-### CRD / Prerequisites Matrix
-Helm release comparison across all clusters — version, revision, and deployment status.
-
-![CRDs](docs/screenshots/10-crds-comparison.png)
+</details>
 
 ---
 
@@ -95,26 +95,24 @@ Helm release comparison across all clusters — version, revision, and deploymen
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Browser (SPA)                            │
-│   dashboard.js  ·  dashboard.css  ·  dark theme  ·  localStorage │
+│   Vanilla JS  ·  CSS Variables  ·  Dark Theme  ·  localStorage  │
 └──────────────────────────┬──────────────────────────────────────┘
                            │  REST API (JSON)
 ┌──────────────────────────▼──────────────────────────────────────┐
 │                    Flask Backend (app.py)                        │
-│   /api/clusters  ·  /api/environments  ·  /api/env/<dc>/<env>   │
-│   /api/services  ·  /api/quick-links   ·  /api/crd-releases     │
-└───────┬─────────────────────────────────────────────┬───────────┘
-        │                                             │
-┌───────▼───────────┐                       ┌─────────▼───────────┐
-│   k8s_client.py   │                       │   aws_client.py     │
-│   OCP OAuth +     │                       │   STS token gen     │
-│   K8s API calls   │                       │   boto3 / botocore  │
-│   (multi-thread)  │                       │   EKS auto-discover │
-└───────┬───────────┘                       └─────────┬───────────┘
-        │                                             │
-┌───────▼───────────┐                       ┌─────────▼───────────┐
-│  OCP Clusters     │                       │  AWS EKS Clusters   │
-│  :6443 (OAuth)    │                       │  :443 (STS)         │
-└───────────────────┘                       └─────────────────────┘
+│   /api/clusters · /api/environments · /api/env/<dc>/<env>       │
+│   /api/services · /api/quick-links  · /api/crd-releases         │
+└───────┬─────────────────────────────────────────┬───────────────┘
+        │                                         │
+┌───────▼───────────┐                   ┌─────────▼───────────┐
+│   k8s_client.py   │                   │   aws_client.py     │
+│ • OCP OAuth login  │                   │ • STS token gen     │
+│ • K8s API calls    │                   │ • boto3 EKS client  │
+│ • ThreadPoolExec   │                   │ • Auto-discovery    │
+│ • In-memory cache  │                   │ • Node group class  │
+└───────┬───────────┘                   └─────────┬───────────┘
+        │                                         │
+   OCP Clusters (:6443)                    EKS Clusters (:443)
 ```
 
 ---
@@ -123,41 +121,24 @@ Helm release comparison across all clusters — version, revision, and deploymen
 
 | Layer | Technology |
 |-------|-----------|
-| **Frontend** | Vanilla JavaScript (ES6+), CSS3 with CSS Variables, HTML5 |
+| **Frontend** | Vanilla JavaScript (ES6+), CSS3 Custom Properties, HTML5 |
 | **Backend** | Python 3.9+, Flask, Gunicorn |
-| **Kubernetes** | kubernetes-client/python, OpenShift OAuth, AWS STS |
-| **AWS** | boto3, botocore (EKS describe-cluster, list-clusters) |
-| **Deployment** | Docker (multi-stage build), OpenShift Route, systemd (bare metal) |
-| **Data** | In-memory cache with configurable TTL, SQLite history (optional) |
+| **Kubernetes** | `kubernetes-client/python`, OpenShift OAuth, AWS STS |
+| **AWS** | `boto3`, `botocore` (EKS describe-cluster, list-clusters, STS) |
+| **Deployment** | Docker multi-stage build, OpenShift Route, systemd (bare metal) |
+| **Caching** | In-memory with configurable TTL, SQLite for history (optional) |
 
 ---
 
-## Project Structure
+## Key Technical Highlights
 
-```
-multi-cloud-k8s-dashboard/
-├── app.py                  # Flask application & REST API routes
-├── k8s_client.py           # Kubernetes client — OCP + EKS data fetching
-├── aws_client.py           # AWS STS token generation for EKS auth
-├── config.py               # Environment variable configuration
-├── mock_data.py            # Realistic mock data for demo/dev mode
-├── requirements.txt        # Python dependencies
-├── Dockerfile              # Multi-stage Docker build
-├── .dockerignore
-├── static/
-│   ├── js/dashboard.js     # Frontend SPA logic
-│   └── css/dashboard.css   # Dark theme styles
-├── templates/
-│   └── dashboard.html      # Single HTML template (Jinja2)
-├── k8s/
-│   ├── deployment.yaml     # K8s Deployment, Service, Route manifests
-│   └── dashboard-config.yaml  # ConfigMap with cluster definitions
-├── deploy/
-│   └── rogers-dashboard.service  # systemd unit for bare-metal RHEL
-├── start.sh                # Bare-metal startup script
-└── docs/
-    └── screenshots/        # Dashboard screenshots
-```
+- **Multi-threaded cluster polling** — `ThreadPoolExecutor` queries all 11+ clusters in parallel for sub-second page loads
+- **EKS auto-discovery** — `list_clusters()` + `describe_cluster()` eliminates manual EKS registration; node groups are classified by `eks.amazonaws.com/nodegroup` labels into Application, Infra, Couchbase, Elasticsearch roles
+- **Dual authentication** — OCP OAuth (user/password → token) and AWS STS (access key → presigned token) handled transparently
+- **Version intelligence** — Parses product version ConfigMaps per namespace, detects RT/AU/BS mismatches, tracks HF (hotfix) numbers
+- **Zero-framework frontend** — No React/Vue build step; single `dashboard.js` file (~3K lines) with localStorage state persistence, column resizing, density toggle, and CSV export
+- **Mock mode** — Full demo with realistic data for development without cluster access
+- **Proxy-aware** — Configurable HTTP/HTTPS/NO_PROXY for corporate network environments
 
 ---
 
@@ -166,70 +147,72 @@ multi-cloud-k8s-dashboard/
 ### Demo Mode (No Cluster Access Needed)
 
 ```bash
-# Clone the repo
 git clone https://github.com/amolganje/multi-cloud-k8s-dashboard.git
 cd multi-cloud-k8s-dashboard
 
-# Create virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# Run in mock mode
 export MOCK_MODE=true
 python app.py
 ```
 
-Open [http://localhost:8080](http://localhost:8080) to see the dashboard with realistic mock data.
+Open [http://localhost:8080](http://localhost:8080)
 
-### Production (OpenShift)
+### Production Deployment (OpenShift)
 
 ```bash
-# Build & push the image
 docker build -t <your-registry>/rogers-dashboard:latest .
 docker push <your-registry>/rogers-dashboard:latest
 
-# Create namespace, secret, configmap, and deploy
 oc new-project rogers-dashboard
 oc create secret generic rogers-dashboard-cred \
   --from-literal=OCP_USERNAME=<svc-account> \
   --from-literal=OCP_PASSWORD=<password> \
   --from-literal=AWS_ACCESS_KEY_ID=<key> \
-  --from-literal=AWS_SECRET_ACCESS_KEY=<secret> \
-  -n rogers-dashboard
+  --from-literal=AWS_SECRET_ACCESS_KEY=<secret>
 
-oc apply -f k8s/dashboard-config.yaml -n rogers-dashboard
-oc apply -f k8s/deployment.yaml -n rogers-dashboard
+oc apply -f k8s/dashboard-config.yaml
+oc apply -f k8s/deployment.yaml
 ```
 
-See [DEPLOY.md](DEPLOY.md) for bare-metal (RHEL + systemd) deployment instructions.
+See [DEPLOY.md](DEPLOY.md) for bare-metal RHEL deployment with systemd.
+
+---
+
+## Project Structure
+
+```
+├── app.py                 # Flask routes & API endpoints
+├── k8s_client.py          # Multi-cloud K8s client (OCP + EKS)
+├── aws_client.py          # AWS STS token generation
+├── config.py              # Environment configuration
+├── mock_data.py           # Realistic mock data for demo mode
+├── Dockerfile             # Multi-stage build
+├── static/
+│   ├── js/dashboard.js    # Frontend SPA
+│   └── css/dashboard.css  # Dark theme
+├── templates/
+│   └── dashboard.html     # Jinja2 template
+├── k8s/
+│   ├── deployment.yaml    # K8s manifests
+│   └── dashboard-config.yaml
+└── deploy/
+    └── rogers-dashboard.service  # systemd unit
+```
 
 ---
 
 ## Configuration
 
-All configuration is via environment variables or the Kubernetes ConfigMap:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MOCK_MODE` | Use mock data (no cluster access) | `false` |
-| `CLUSTERS_CONFIG` | JSON map of OCP clusters | — |
-| `QUICK_LINKS` | JSON map of quick-link groups | — |
-| `AWS_REGION` | AWS region for EKS discovery | `us-east-1` |
-| `AWS_ACCESS_KEY_ID` | AWS access key | — |
-| `AWS_SECRET_ACCESS_KEY` | AWS secret key | — |
-| `HTTP_PROXY` / `HTTPS_PROXY` | Outbound proxy for AWS | — |
-| `OCP_USERNAME` / `OCP_PASSWORD` | OCP service account credentials | — |
-
----
-
-## Key Design Decisions
-
-- **Single-page application** — No React/Vue build step; vanilla JS keeps the footprint tiny and the deploy simple
-- **Multi-threaded K8s calls** — `ThreadPoolExecutor` queries all clusters in parallel for sub-second refresh
-- **In-memory cache** — Configurable TTL avoids hammering cluster APIs while keeping data fresh
-- **EKS auto-discovery** — `list_clusters()` + `describe_cluster()` eliminates manual EKS registration
-- **Mock mode** — Full-featured demo with realistic data for development and showcasing without cluster access
+| Variable | Description |
+|----------|-------------|
+| `MOCK_MODE` | `true` for demo with mock data |
+| `CLUSTERS_CONFIG` | JSON map of OCP clusters |
+| `AWS_REGION` | AWS region for EKS discovery |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | AWS credentials |
+| `OCP_USERNAME` / `OCP_PASSWORD` | OpenShift service account |
+| `HTTP_PROXY` / `HTTPS_PROXY` | Corporate proxy (optional) |
 
 ---
 
